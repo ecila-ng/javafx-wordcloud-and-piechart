@@ -11,3 +11,7 @@ This application is a live updating word cloud and pie chart. The system should 
 List of user interface functionality:
 - The 'Add' button should allow the user to type in a new word made up of only characters and digits, and add that word into the word cloud. If the word is already in the cloud, the corresponding word in the cloud will increase its font size by two points. If such an increase causes the word to overlap any other words, the word should be moved to a location where it does not overlap any others.
 - The 'Clear All' button will remove all words from the pie chart and the word cloud, also reset the text field.
+
+Demo:
+
+![Screenshot](Screenshot.png) 
