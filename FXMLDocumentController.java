@@ -6,10 +6,8 @@
 package project2;
 
 import java.net.URL;
-import java.util.ResourceBundle;
-import javafx.fxml.Initializable;
-import java.net.URL;
-import java.util.HashSet;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.ResourceBundle;
 import javafx.application.Platform;
@@ -31,11 +29,11 @@ import javafx.scene.control.TextField;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
-import javafx.scene.text.FontPosture;
-import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
+import java.util.Random;
 
 /**
  * FXML Controller class
@@ -64,83 +62,81 @@ public class FXMLDocumentController implements Initializable {
 
     @FXML
     public void updatePie(ActionEvent e) {
-
         Button clicked = (Button) e.getSource();
-
         boolean matchFound = false;
 
-        //if the enter button was pressed for the add field
+        //if the add button was clicked with text in the text field
         if (clicked == addButton) {
             if (addField.getText().length() > 0) {
                 for (PieChart.Data w : myPieChart.getData()) {
                     if (w.getName().equals(addField.getText())) {
-                        //If it was duplicate
+                        popupWindow("Duplicate text!");
                         matchFound = true;
-
-                        //DO SOMETHING
+                        //Do something?
                     }
                 }
                 if (!matchFound) {
                     addStuffs();
                 }
-            } else //IF THERE IS NO TEXT
+            } else //If there is no text
             {
                 popupWindow("No text was entered!");
             }
-
         }
-        addField.setText(""); //reset text
-
+        addField.setText(""); //reset text after added
     }
 
-    //This adds pie and cloud
+    //This function adds pie and cloud
     private void addStuffs() {
+
         //make a new slice of pie
         PieChart.Data newSlice = new PieChart.Data(addField.getText(), 1);
         //add the slice to the pie
         myPieChart.getData().add(newSlice);
         myPieChart.setLabelsVisible(false);
 
-        //if the pie slice is clicked on, add points
-        newSlice.getNode().addEventHandler(MouseEvent.MOUSE_CLICKED,
-                new EventHandler<MouseEvent>() {
-            @Override
-            public void handle(MouseEvent e) {
-                //add a vote and use magic to force it into an int
-                int newPieValue = ((int) newSlice.getPieValue()) + 2;
-                newSlice.setPieValue(newPieValue);
-
-            }
-        }
-        );
-
         //make a new piece of cloud
         Label newWord = new Label();
         newWord.setText(addField.getText());
-        newWord.setFont(new Font(newWord.getFont().getName(), 10));
+        newWord.setFont(new Font(newWord.getFont().getName(), 30));
+
+        //Random color for the word
+        List<Color> temp = new ArrayList<>();
+        temp.add(Color.web("#EE4035"));
+        temp.add(Color.web("#F37736"));
+        temp.add(Color.web("#FDF498"));
+        temp.add(Color.web("#7BC043"));
+        temp.add(Color.web("#0392CF"));
+        Random random = new Random();
+        newWord.setTextFill(temp.get(random.nextInt(temp.size())));
 
         placeWord(newWord);
 
+        //if the pie slice is clicked on, add points
+        newSlice.getNode().addEventHandler(MouseEvent.MOUSE_CLICKED, (MouseEvent e) -> {
+            int newPieValue = ((int) newSlice.getPieValue()) + 1;
+            newSlice.setPieValue(newPieValue);
+
+            double currFontSize = newWord.getFont().getSize();
+            newWord.setFont(new Font(newWord.getFont().getName(), currFontSize + 2));
+            placeWord(newWord);
+        });
+
         //if the word is clicked on in cloud, add points
-        newWord.addEventHandler(MouseEvent.MOUSE_CLICKED,
-                new EventHandler<MouseEvent>() {
-            @Override
-            public void handle(MouseEvent e) {
-                //add two points and use magic to force it into an int
-                double currFontSize = newWord.getFont().getSize();
-                newWord.setFont(new Font(newWord.getFont().getName(), currFontSize + 4));
-                placeWord(newWord);
+        newWord.addEventHandler(MouseEvent.MOUSE_CLICKED, (MouseEvent e) -> {
+            int newPieValue = ((int) newSlice.getPieValue()) + 1;
+            newSlice.setPieValue(newPieValue);
 
-            }
-        }
-        );
-
+            double currFontSize = newWord.getFont().getSize();
+            newWord.setFont(new Font(newWord.getFont().getName(), currFontSize + 2));
+            placeWord(newWord);
+        });
     }
 
+    //This function clears everything off the scene
     public void clearAll(ActionEvent e) {
         Button clicked = (Button) e.getSource();
 
-        //if the clear button was clicked
         if (clicked == clearButton) {
             myPieChart.getData().clear();
             myCloud.getChildren().clear();
@@ -151,14 +147,14 @@ public class FXMLDocumentController implements Initializable {
     public void quit(ActionEvent e) {
         Button clicked = (Button) e.getSource();
 
-        //if the quit button was clicked
+        //if the Quit button was clicked
         if (clicked == quitButton) {
-            Alert alert = new Alert(AlertType.WARNING);
+            Alert alert = new Alert(AlertType.CONFIRMATION);
             alert.setTitle("Quit?");
             alert.setContentText("Are you sure you want to quit?");
 
             Optional<ButtonType> result = alert.showAndWait();
-            if (result.get() == ButtonType.YES) {
+            if (result.get() == ButtonType.OK) {
                 Platform.exit();
                 System.exit(0);
             } else if (result.get() == ButtonType.CANCEL) {
@@ -171,6 +167,7 @@ public class FXMLDocumentController implements Initializable {
         // TODO
     }
 
+    //This function creates pop-up window 
     private void popupWindow(String string) {
         Scene scene = new Scene(new Group(new Text(25, 25, string)));
 
@@ -186,53 +183,74 @@ public class FXMLDocumentController implements Initializable {
         myStage.setScene(new Scene(box));
     }
 
+    //This function adds word into the cloud
     public void placeWord(Label newWord) {
 
-        //double currFontSize = newWord.getFont().getSize();  
-        //newWord.setFont(new Font(newWord.getFont().getName(), currFontSize+2));
-        boolean intersects = false;
-
+        boolean intersects;
+        intersects = causesIntersection(newWord);
+        //System.out.println("Start: " + intersects);
         double radius = 1;
         double angle = 0;
         double middleX = myCloud.getWidth() / 2;
         double middleY = myCloud.getHeight() / 2;
-        do {
+
+        if (intersects == false) {
             double xPos = middleX + radius * Math.cos(angle);
             double yPos = middleY + radius * Math.sin(angle);
             newWord.setLayoutX(xPos);
             newWord.setLayoutY(yPos);
             newWord.setRotate(0);
-            intersects = causesIntersection(newWord);
-            if (intersects) {
+            //System.out.println(":" + middleX + ":" + middleY + ":" + xPos + ":" + yPos);
+            myCloud.getChildren().add(newWord);
+        } else if (intersects == true) {
+            while (true) {
+                //System.out.println(": " + intersects);
+                radius += 0.5;
+                angle += 0.1;
+
+                double xPos = middleX + radius * Math.cos(angle);
+                double yPos = middleY + radius * Math.sin(angle);
+
+                //System.out.println("r: " + radius + " a:" + angle);
+                newWord.setLayoutX(xPos);
+                newWord.setLayoutY(yPos);
                 newWord.setRotate(90);
+
+                //myCloud.getChildren().add(newWord);
                 intersects = causesIntersection(newWord);
-            }
-            radius += 0.5;
-            angle += 0.1;
+                System.out.println(": " + intersects);
+                if (intersects == false) {
 
-            //System.out.println("Radius: " + radius + " Angle: " + angle);
-            //System.out.println("Intersects: " + intersects);
-            if (intersects == false) {
-
-                myCloud.getChildren().add(newWord);
-            }
-        } while (intersects);
-
-    }
-
-    public boolean causesIntersection(Label newWord) {
-        for (Node word : myCloud.getChildren()) {
-            Label oldWord = (Label) word;
-            
-            Bounds bound1 = newWord.getBoundsInParent();
-            Bounds bound2 = oldWord.getBoundsInParent();
-
-            if (bound2.intersects(bound1) && oldWord != newWord) {
-                return true;
-            } else {
-                return false;
+                    newWord.setLayoutX(xPos);
+                    newWord.setLayoutY(yPos);
+                    myCloud.getChildren().add(newWord);
+                    break;
+                }
             }
         }
-        return false;
+    }
+
+    //This function checks if two words are touching each other
+    public boolean causesIntersection(Label newWord) {
+        boolean flag = false;
+        List<String> temp = new ArrayList<>();
+        //Looping through every other words in the cloud
+        for (Node n : myCloud.getChildren()) {
+            Label oldWord = (Label) n;
+
+            Bounds bound1 = newWord.getBoundsInParent();
+            Bounds bound2 = oldWord.getBoundsInParent();
+            System.out.println(newWord + ".vs" + oldWord);
+            flag = (bound2.intersects(bound1) && (oldWord.equals(newWord) == false));
+            temp.add(Boolean.toString(flag));
+        }
+        System.out.println("Result: " + temp);
+
+        //Make sure it is not touching ANY other words
+        if (temp.contains("true")) {
+            return true;
+        } else {
+            return false;
+        }
     }
 }
